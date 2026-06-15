@@ -25,6 +25,9 @@ export default function WorkDetailPage() {
   const [episodeInput, setEpisodeInput] = useState("");
   const [memo, setMemo] = useState("");
   const [saving, setSaving] = useState(false);
+  const [ticketSaving, setTicketSaving] = useState(false);
+  const [progressError, setProgressError] = useState("");
+  const [ticketError, setTicketError] = useState("");
 
   const serverTicketStatus = getTicketStatus(ticket);
   const chargeCompleteAtMs = getChargeCompleteAtMs(ticket);
@@ -51,38 +54,62 @@ export default function WorkDetailPage() {
   useEffect(() => { if (user) fetchData(); }, [user, id]);
 
   const handlePlusN = async (n: number) => {
-    if (!user) return;
+    if (!user || saving) return;
     const current = progress?.current_episode ?? (episodeInput ? parseInt(episodeInput, 10) : 0);
+    if (isNaN(current)) return;
     setSaving(true);
+    setProgressError("");
     try {
       await upsertProgress(user.uid, id, current + n, memo, device);
       await fetchData();
+    } catch {
+      setProgressError("更新に失敗しました。もう一度お試しください。");
     } finally {
       setSaving(false);
     }
   };
 
   const handleSaveProgress = async () => {
-    if (!user || !episodeInput) return;
+    if (!user || !episodeInput || saving) return;
+    const ep = parseInt(episodeInput, 10);
+    if (isNaN(ep) || ep < 0) {
+      setProgressError("正しい話数を入力してください。");
+      return;
+    }
     setSaving(true);
+    setProgressError("");
     try {
-      await upsertProgress(user.uid, id, parseInt(episodeInput, 10), memo, device);
+      await upsertProgress(user.uid, id, ep, memo, device);
       await fetchData();
+    } catch {
+      setProgressError("更新に失敗しました。もう一度お試しください。");
     } finally {
       setSaving(false);
     }
   };
 
   const handleUseTicket = async () => {
-    if (!user) return;
-    await useTicket(user.uid, id);
-    await fetchData();
+    if (!user || ticketSaving) return;
+    setTicketSaving(true);
+    setTicketError("");
+    try {
+      await useTicket(user.uid, id);
+      await fetchData();
+    } catch {
+      setTicketError("チケットの使用に失敗しました。もう一度お試しください。");
+    } finally {
+      setTicketSaving(false);
+    }
   };
 
   const handleArchive = async () => {
     if (!user || !confirm("この作品をアーカイブしますか?")) return;
-    await archiveWork(user.uid, id);
-    router.push("/works");
+    try {
+      await archiveWork(user.uid, id);
+      router.push("/works");
+    } catch {
+      alert("アーカイブに失敗しました。もう一度お試しください。");
+    }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">読み込み中...</div>;
@@ -145,20 +172,24 @@ export default function WorkDetailPage() {
                 <input
                   type="number"
                   value={episodeInput}
-                  onChange={(e) => setEpisodeInput(e.target.value)}
+                  onChange={(e) => { setEpisodeInput(e.target.value); setProgressError(""); }}
                   className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   min={0}
                 />
               </div>
               <button
                 onClick={handleSaveProgress}
-                disabled={saving}
+                disabled={saving || !episodeInput}
                 className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50"
               >
                 {saving ? "保存中..." : "保存"}
               </button>
             </div>
           </div>
+
+          {progressError && (
+            <p className="text-xs text-red-500">{progressError}</p>
+          )}
 
           <div>
             <label className="text-xs text-gray-500 mb-1 block">メモ</label>
@@ -192,11 +223,15 @@ export default function WorkDetailPage() {
           {!hasTicket && (
             <p className="text-sm text-gray-400">まだ待てば0円を使っていません</p>
           )}
+          {ticketError && (
+            <p className="text-xs text-red-500">{ticketError}</p>
+          )}
           <button
             onClick={handleUseTicket}
-            className="w-full bg-orange-400 hover:bg-orange-500 text-white font-bold py-3 rounded-xl text-sm transition-colors"
+            disabled={ticketSaving}
+            className="w-full bg-orange-400 hover:bg-orange-500 text-white font-bold py-3 rounded-xl text-sm transition-colors disabled:opacity-50"
           >
-            待てば0円を使った
+            {ticketSaving ? "処理中..." : "待てば0円を使った"}
           </button>
         </section>
 

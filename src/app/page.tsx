@@ -51,22 +51,34 @@ export default function Dashboard() {
     if (!user) return;
     const w = works.find((x) => x.id === workId);
     const current = w?.progress?.current_episode ?? 0;
-    await upsertProgress(user.uid, workId, current + 1, w?.progress?.memo ?? "", device);
-    await fetchAll();
+    try {
+      await upsertProgress(user.uid, workId, current + 1, w?.progress?.memo ?? "", device);
+      await fetchAll();
+    } catch (err) {
+      console.error("進捗更新エラー:", err);
+    }
   };
 
   const handlePlusSeven = async (workId: string) => {
     if (!user) return;
     const w = works.find((x) => x.id === workId);
     const current = w?.progress?.current_episode ?? 0;
-    await upsertProgress(user.uid, workId, current + 7, w?.progress?.memo ?? "", device);
-    await fetchAll();
+    try {
+      await upsertProgress(user.uid, workId, current + 7, w?.progress?.memo ?? "", device);
+      await fetchAll();
+    } catch (err) {
+      console.error("進捗更新エラー:", err);
+    }
   };
 
   const handleUseTicket = async (workId: string) => {
     if (!user) return;
-    await useTicket(user.uid, workId);
-    await fetchAll();
+    try {
+      await useTicket(user.uid, workId);
+      await fetchAll();
+    } catch (err) {
+      console.error("チケット使用エラー:", err);
+    }
   };
 
   if (loading) {

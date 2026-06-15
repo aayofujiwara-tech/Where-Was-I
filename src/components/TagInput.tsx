@@ -1,6 +1,9 @@
 "use client";
 import { useState, KeyboardEvent } from "react";
 
+const MAX_TAG_LENGTH = 30;
+const MAX_TAG_COUNT = 10;
+
 interface Props {
   tags: string[];
   onChange: (tags: string[]) => void;
@@ -11,8 +14,8 @@ export function TagInput({ tags, onChange, placeholder = "タグを入力してE
   const [input, setInput] = useState("");
 
   const add = () => {
-    const val = input.trim();
-    if (val && !tags.includes(val)) {
+    const val = input.trim().slice(0, MAX_TAG_LENGTH);
+    if (val && !tags.includes(val) && tags.length < MAX_TAG_COUNT) {
       onChange([...tags, val]);
     }
     setInput("");
@@ -35,14 +38,17 @@ export function TagInput({ tags, onChange, placeholder = "タグを入力してE
           <button type="button" onClick={() => remove(tag)} className="hover:text-blue-900 leading-none">×</button>
         </span>
       ))}
-      <input
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={onKeyDown}
-        onBlur={add}
-        placeholder={tags.length === 0 ? placeholder : ""}
-        className="flex-1 min-w-[120px] text-sm outline-none bg-transparent"
-      />
+      {tags.length < MAX_TAG_COUNT && (
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
+          onBlur={add}
+          placeholder={tags.length === 0 ? placeholder : ""}
+          maxLength={MAX_TAG_LENGTH}
+          className="flex-1 min-w-[120px] text-sm outline-none bg-transparent"
+        />
+      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@ export default function EditWorkPage() {
   const router = useRouter();
 
   const [work, setWork] = useState<Work | null>(null);
+  const [fetching, setFetching] = useState(true);
   const [title, setTitle] = useState("");
   const [piccomaUrl, setPiccomaUrl] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
@@ -23,6 +24,7 @@ export default function EditWorkPage() {
 
   useEffect(() => {
     if (!user) return;
+    setFetching(true);
     getWorks(user.uid).then((works) => {
       const found = works.find((w) => w.id === id) ?? null;
       setWork(found);
@@ -32,12 +34,23 @@ export default function EditWorkPage() {
         setCoverUrl(found.cover_image_url);
         setTags(found.genre_tags);
       }
-    });
+    }).finally(() => setFetching(false));
   }, [user, id]);
+
+  const isValidUrl = (url: string) =>
+    url === "" || url.startsWith("https://") || url.startsWith("http://");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!isValidUrl(piccomaUrl.trim())) {
+      setError("ピッコマURLはhttps://で始まるURLを入力してください。");
+      return;
+    }
+    if (!isValidUrl(coverUrl.trim())) {
+      setError("サムネイルURLはhttps://で始まるURLを入力してください。");
+      return;
+    }
     setError("");
     setSaving(true);
     try {
@@ -56,7 +69,7 @@ export default function EditWorkPage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">読み込み中...</div>;
+  if (loading || fetching) return <div className="min-h-screen flex items-center justify-center text-gray-400">読み込み中...</div>;
   if (!user) return <LoginScreen />;
   if (!work) return <div className="min-h-screen flex items-center justify-center text-gray-400">作品が見つかりません</div>;
 

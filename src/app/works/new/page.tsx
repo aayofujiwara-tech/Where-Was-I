@@ -17,9 +17,20 @@ export default function NewWorkPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const isValidUrl = (url: string) =>
+    url === "" || url.startsWith("https://") || url.startsWith("http://");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!isValidUrl(piccomaUrl.trim())) {
+      setError("ピッコマURLはhttps://で始まるURLを入力してください。");
+      return;
+    }
+    if (!isValidUrl(coverUrl.trim())) {
+      setError("サムネイルURLはhttps://で始まるURLを入力してください。");
+      return;
+    }
     setError("");
     setSaving(true);
     try {

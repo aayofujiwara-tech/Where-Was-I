@@ -5,12 +5,14 @@ import { LoginScreen } from "@/components/LoginScreen";
 import { WorkCard } from "@/components/WorkCard";
 import { getWorks, getProgress, getLatestTicket, getTicketStatus, getChargeCompleteAtMs, upsertProgress, useTicket } from "@/lib/firestore";
 import { useDevice } from "@/hooks/useDevice";
+import { useSteps } from "@/hooks/useSteps";
 import type { WorkWithProgress } from "@/types";
 import Link from "next/link";
 
 export default function Dashboard() {
   const { user, loading, signOut } = useAuth();
   const device = useDevice();
+  const { steps, updateStep } = useSteps(user?.uid ?? null);
   const [works, setWorks] = useState<WorkWithProgress[]>([]);
   const [fetching, setFetching] = useState(true);
 
@@ -32,7 +34,6 @@ export default function Dashboard() {
         if (a.ticketStatus === "ready" && b.ticketStatus !== "ready") return -1;
         if (b.ticketStatus === "ready" && a.ticketStatus !== "ready") return 1;
         if (a.ticketStatus === "charging" && b.ticketStatus === "charging") {
-          // チャージ完了が早い順（小さいタイムスタンプが先）
           return (a.chargeCompleteAtMs ?? Infinity) - (b.chargeCompleteAtMs ?? Infinity);
         }
         return 0;
@@ -47,24 +48,12 @@ export default function Dashboard() {
     if (user) fetchAll();
   }, [user]);
 
-  const handlePlusOne = async (workId: string) => {
+  const handleAdvance = async (workId: string, n: number) => {
     if (!user) return;
     const w = works.find((x) => x.id === workId);
     const current = w?.progress?.current_episode ?? 0;
     try {
-      await upsertProgress(user.uid, workId, current + 1, w?.progress?.memo ?? "", device);
-      await fetchAll();
-    } catch (err) {
-      console.error("進捗更新エラー:", err);
-    }
-  };
-
-  const handlePlusSeven = async (workId: string) => {
-    if (!user) return;
-    const w = works.find((x) => x.id === workId);
-    const current = w?.progress?.current_episode ?? 0;
-    try {
-      await upsertProgress(user.uid, workId, current + 7, w?.progress?.memo ?? "", device);
+      await upsertProgress(user.uid, workId, current + n, w?.progress?.memo ?? "", device);
       await fetchAll();
     } catch (err) {
       console.error("進捗更新エラー:", err);
@@ -90,9 +79,10 @@ export default function Dashboard() {
   const chargingWorks = works.filter((w) => w.ticketStatus === "charging");
   const otherWorks = works.filter((w) => !w.ticketStatus);
 
+  const cardProps = { steps, onAdvance: handleAdvance, onUpdateStep: updateStep, onUseTicket: handleUseTicket };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
         <h1 className="text-lg font-bold text-gray-900">続きどこ?</h1>
         <div className="flex items-center gap-3">
@@ -108,40 +98,31 @@ export default function Dashboard() {
           <div className="text-center text-gray-400 py-12">読み込み中...</div>
         ) : (
           <>
-            {/* Ready section */}
             <section>
               <h2 className="text-base font-bold text-green-700 mb-3">✅ 今すぐ読める ({readyWorks.length})</h2>
               {readyWorks.length === 0 ? (
                 <p className="text-sm text-gray-400">チャージ完了の作品はありません</p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {readyWorks.map((w) => (
-                    <WorkCard key={w.id} work={w} onPlusOne={handlePlusOne} onPlusSeven={handlePlusSeven} onUseTicket={handleUseTicket} />
-                  ))}
+                  {readyWorks.map((w) => <WorkCard key={w.id} work={w} {...cardProps} />)}
                 </div>
               )}
             </section>
 
-            {/* Charging section */}
             {chargingWorks.length > 0 && (
               <section>
                 <h2 className="text-base font-bold text-gray-600 mb-3">⏳ チャージ中 ({chargingWorks.length})</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {chargingWorks.map((w) => (
-                    <WorkCard key={w.id} work={w} onPlusOne={handlePlusOne} onPlusSeven={handlePlusSeven} onUseTicket={handleUseTicket} />
-                  ))}
+                  {chargingWorks.map((w) => <WorkCard key={w.id} work={w} {...cardProps} />)}
                 </div>
               </section>
             )}
 
-            {/* Other works */}
             {otherWorks.length > 0 && (
               <section>
                 <h2 className="text-base font-bold text-gray-500 mb-3">📚 その他の作品 ({otherWorks.length})</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {otherWorks.map((w) => (
-                    <WorkCard key={w.id} work={w} onPlusOne={handlePlusOne} onPlusSeven={handlePlusSeven} onUseTicket={handleUseTicket} />
-                  ))}
+                  {otherWorks.map((w) => <WorkCard key={w.id} work={w} {...cardProps} />)}
                 </div>
               </section>
             )}
@@ -157,7 +138,6 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* Works list link */}
         {works.length > 0 && (
           <div className="text-center pt-4">
             <Link href="/works" className="text-blue-500 hover:underline text-sm">すべての作品を見る →</Link>

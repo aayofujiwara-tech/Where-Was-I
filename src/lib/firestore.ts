@@ -4,6 +4,8 @@ import {
   addDoc,
   updateDoc,
   getDocs,
+  getDoc,
+  setDoc,
   query,
   where,
   Timestamp,
@@ -121,6 +123,21 @@ export function getTicketStatus(ticket: Ticket | null): "ready" | "charging" | n
 export function getChargeCompleteAtMs(ticket: Ticket | null): number | null {
   if (!ticket) return null;
   return ticket.charge_complete_at.toMillis();
+}
+
+// ── Step Settings ─────────────────────────────────────────────────────
+const DEFAULT_STEPS: [number, number, number] = [1, 7, 3];
+
+export async function getSteps(userId: string): Promise<[number, number, number]> {
+  const snap = await getDoc(doc(db, "users", userId, "settings", "steps"));
+  if (!snap.exists()) return DEFAULT_STEPS;
+  const vals = snap.data().values as number[];
+  if (!Array.isArray(vals) || vals.length !== 3) return DEFAULT_STEPS;
+  return vals as [number, number, number];
+}
+
+export async function updateSteps(userId: string, values: [number, number, number]): Promise<void> {
+  await setDoc(doc(db, "users", userId, "settings", "steps"), { values });
 }
 
 // ── Custom Tags ───────────────────────────────────────────────────────

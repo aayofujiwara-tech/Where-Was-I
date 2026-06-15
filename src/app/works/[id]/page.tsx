@@ -9,6 +9,8 @@ import {
 import type { Work, Progress, Ticket, ProgressHistory } from "@/types";
 import { useDevice } from "@/hooks/useDevice";
 import { useCountdown } from "@/hooks/useCountdown";
+import { useSteps } from "@/hooks/useSteps";
+import { StepButton } from "@/components/StepButton";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
@@ -17,6 +19,7 @@ export default function WorkDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const device = useDevice();
+  const { steps, updateStep } = useSteps(user?.uid ?? null);
 
   const [work, setWork] = useState<Work | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -53,7 +56,7 @@ export default function WorkDetailPage() {
 
   useEffect(() => { if (user) fetchData(); }, [user, id]);
 
-  const handlePlusN = async (n: number) => {
+  const handleAdvance = async (n: number) => {
     if (!user || saving) return;
     const current = progress?.current_episode ?? (episodeInput ? parseInt(episodeInput, 10) : 0);
     if (isNaN(current)) return;
@@ -141,21 +144,17 @@ export default function WorkDetailPage() {
         <section className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
           <h2 className="font-bold text-gray-800">進捗</h2>
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => handlePlusN(1)}
-              disabled={saving}
-              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl text-sm transition-colors disabled:opacity-50"
-            >
-              +1話進める
-            </button>
-            <button
-              onClick={() => handlePlusN(7)}
-              disabled={saving}
-              className="flex-1 bg-blue-400 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-sm transition-colors disabled:opacity-50"
-            >
-              +7話進める
-            </button>
+          <div className="flex gap-1.5">
+            {steps.map((step, i) => (
+              <StepButton
+                key={i}
+                index={i as 0 | 1 | 2}
+                step={step}
+                busy={saving}
+                onAdvance={() => handleAdvance(step)}
+                onUpdateStep={updateStep}
+              />
+            ))}
           </div>
 
           {progress && (

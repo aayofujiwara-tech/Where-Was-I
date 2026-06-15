@@ -4,25 +4,27 @@ import Image from "next/image";
 import Link from "next/link";
 import type { WorkWithProgress } from "@/types";
 import { useCountdown } from "@/hooks/useCountdown";
+import { StepButton } from "@/components/StepButton";
 
 interface Props {
   work: WorkWithProgress;
-  onPlusOne: (workId: string) => Promise<void>;
-  onPlusSeven: (workId: string) => Promise<void>;
+  steps: [number, number, number];
+  onAdvance: (workId: string, n: number) => Promise<void>;
+  onUpdateStep: (index: 0 | 1 | 2, value: number) => Promise<void>;
   onUseTicket: (workId: string) => Promise<void>;
 }
 
-export function WorkCard({ work, onPlusOne, onPlusSeven, onUseTicket }: Props) {
+export function WorkCard({ work, steps, onAdvance, onUpdateStep, onUseTicket }: Props) {
   const [busy, setBusy] = useState(false);
   const { text: countdownText, done: chargeDone } = useCountdown(work.chargeCompleteAtMs);
 
   const isReady = work.ticketStatus === "ready" || chargeDone;
   const isCharging = work.ticketStatus === "charging" && !chargeDone;
 
-  const handle = async (fn: (id: string) => Promise<void>) => {
+  const run = async (fn: () => Promise<void>) => {
     if (busy) return;
     setBusy(true);
-    try { await fn(work.id); } finally { setBusy(false); }
+    try { await fn(); } finally { setBusy(false); }
   };
 
   return (
@@ -85,24 +87,20 @@ export function WorkCard({ work, onPlusOne, onPlusSeven, onUseTicket }: Props) {
       )}
 
       <div className="flex flex-col gap-2">
-        <div className="flex gap-2">
-          <button
-            onClick={() => handle(onPlusOne)}
-            disabled={busy}
-            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-3 rounded-xl text-sm transition-colors disabled:opacity-50"
-          >
-            +1話進める
-          </button>
-          <button
-            onClick={() => handle(onPlusSeven)}
-            disabled={busy}
-            className="flex-1 bg-blue-400 hover:bg-blue-500 text-white font-bold py-3 px-3 rounded-xl text-sm transition-colors disabled:opacity-50"
-          >
-            +7話進める
-          </button>
+        <div className="flex gap-1.5">
+          {steps.map((step, i) => (
+            <StepButton
+              key={i}
+              index={i as 0 | 1 | 2}
+              step={step}
+              busy={busy}
+              onAdvance={() => run(() => onAdvance(work.id, step))}
+              onUpdateStep={onUpdateStep}
+            />
+          ))}
         </div>
         <button
-          onClick={() => handle(onUseTicket)}
+          onClick={() => run(() => onUseTicket(work.id))}
           disabled={busy}
           className="w-full bg-orange-400 hover:bg-orange-500 text-white font-bold py-3 rounded-xl text-sm transition-colors disabled:opacity-50"
         >

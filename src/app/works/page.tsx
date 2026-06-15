@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginScreen } from "@/components/LoginScreen";
-import { getWorks, getProgress, getLatestTicket, getTicketStatus } from "@/lib/firestore";
+import { getWorks, getProgress, getLatestTicket, getTicketStatus, getChargeCompleteAtMs } from "@/lib/firestore";
 import type { WorkWithProgress } from "@/types";
 import Link from "next/link";
 import Image from "next/image";
@@ -25,10 +25,8 @@ export default function WorksPage() {
             const progress = await getProgress(user.uid, w.id);
             const latestTicket = await getLatestTicket(user.uid, w.id);
             const ticketStatus = getTicketStatus(latestTicket);
-            const chargeRemainingMs = latestTicket
-              ? Math.max(0, latestTicket.charge_complete_at.toMillis() - Date.now())
-              : null;
-            return { ...w, progress, latestTicket, ticketStatus, chargeRemainingMs };
+            const chargeCompleteAtMs = getChargeCompleteAtMs(latestTicket);
+            return { ...w, progress, latestTicket, ticketStatus, chargeCompleteAtMs };
           })
         );
         setWorks(enriched as WorkWithProgress[]);
@@ -55,7 +53,7 @@ export default function WorksPage() {
       // charge: ready first, then by remaining time
       if (a.ticketStatus === "ready" && b.ticketStatus !== "ready") return -1;
       if (b.ticketStatus === "ready" && a.ticketStatus !== "ready") return 1;
-      return (a.chargeRemainingMs ?? Infinity) - (b.chargeRemainingMs ?? Infinity);
+      return (a.chargeCompleteAtMs ?? Infinity) - (b.chargeCompleteAtMs ?? Infinity);
     });
 
   return (

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginScreen } from "@/components/LoginScreen";
 import {
-  getWorks, getProgress, getLatestTicket, getTicketStatus, getChargeRemainingMs,
+  getWorks, getProgress, getLatestTicket, getTicketStatus, getChargeCompleteAtMs,
   upsertProgress, useTicket, archiveWork, getProgressHistory
 } from "@/lib/firestore";
 import type { Work, Progress, Ticket, ProgressHistory } from "@/types";
@@ -26,9 +26,13 @@ export default function WorkDetailPage() {
   const [memo, setMemo] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const ticketStatus = getTicketStatus(ticket);
-  const chargeRemainingMs = getChargeRemainingMs(ticket);
-  const countdown = useCountdown(chargeRemainingMs);
+  const serverTicketStatus = getTicketStatus(ticket);
+  const chargeCompleteAtMs = getChargeCompleteAtMs(ticket);
+  const { text: countdownText, done: chargeDone } = useCountdown(chargeCompleteAtMs);
+
+  const isReady = serverTicketStatus === "ready" || chargeDone;
+  const isCharging = serverTicketStatus === "charging" && !chargeDone;
+  const hasTicket = ticket !== null;
 
   const fetchData = async () => {
     if (!user) return;
@@ -135,18 +139,18 @@ export default function WorkDetailPage() {
 
         <section className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
           <h2 className="font-bold text-gray-800">待てば0円</h2>
-          {ticketStatus === "ready" && (
+          {serverTicketStatus === "ready" && (
             <div className="bg-green-100 text-green-700 font-bold text-sm px-4 py-2 rounded-xl text-center">
               ✅ チャージ完了！今すぐ読めます
             </div>
           )}
-          {ticketStatus === "charging" && (
+          {serverTicketStatus === "charging" && (
             <div className="bg-gray-100 text-gray-600 text-sm px-4 py-2 rounded-xl text-center">
-              ⏳ チャージ中: 残り {countdown}
+              ⏳ チャージ中: 残り {countdownText}
             </div>
           )}
-          {!ticketStatus && (
-            <p className="text-sm text-gray-400">チケット使用履歴なし</p>
+          {!hasTicket && (
+            <p className="text-sm text-gray-400">まだ待てば0円を使っていません</p>
           )}
           <button
             onClick={handleUseTicket}

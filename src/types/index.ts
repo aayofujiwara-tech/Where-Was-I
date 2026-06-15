@@ -27,7 +27,7 @@ export interface Ticket {
   charge_complete_at: Timestamp;
 }
 
-export type TicketStatus = "charging" | "ready" | "used_today";
+export type TicketStatus = "charging" | "ready";
 
 export interface ProgressHistory {
   id: string;
@@ -41,5 +41,5 @@ export interface WorkWithProgress extends Work {
   progress: Progress | null;
   latestTicket: Ticket | null;
   ticketStatus: TicketStatus | null;
-  chargeRemainingMs: number | null;
+  chargeCompleteAtMs: number | null; // charge_complete_at の絶対タイムスタンプ(ms)
 }

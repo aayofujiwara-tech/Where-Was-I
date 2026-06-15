@@ -11,12 +11,18 @@ interface Props {
 }
 
 export function WorkCard({ work, onPlusOne, onUseTicket }: Props) {
-  const countdown = useCountdown(work.chargeRemainingMs);
-  const isReady = work.ticketStatus === "ready";
-  const isCharging = work.ticketStatus === "charging";
+  const { text: countdownText, done: chargeDone } = useCountdown(work.chargeCompleteAtMs);
+
+  // サーバー取得時点で ready、またはカウントダウンが完了したら読める
+  const isReady = work.ticketStatus === "ready" || chargeDone;
+  const isCharging = work.ticketStatus === "charging" && !chargeDone;
 
   return (
-    <div className={`rounded-2xl p-4 shadow-md flex flex-col gap-3 ${isReady ? "bg-green-50 border border-green-300" : isCharging ? "bg-gray-50 border border-gray-200" : "bg-white border border-gray-200"}`}>
+    <div className={`rounded-2xl p-4 shadow-md flex flex-col gap-3 ${
+      isReady ? "bg-green-50 border border-green-300"
+      : isCharging ? "bg-gray-50 border border-gray-200"
+      : "bg-white border border-gray-200"
+    }`}>
       <div className="flex gap-3 items-start">
         {work.cover_image_url ? (
           <Image
@@ -25,10 +31,11 @@ export function WorkCard({ work, onPlusOne, onUseTicket }: Props) {
             width={60}
             height={80}
             className="rounded object-cover flex-shrink-0"
+            unoptimized
           />
         ) : (
-          <div className="w-[60px] h-[80px] bg-gray-200 rounded flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
-            No img
+          <div className="w-[60px] h-[80px] bg-gray-200 rounded flex items-center justify-center text-gray-300 text-2xl flex-shrink-0">
+            📖
           </div>
         )}
         <div className="flex-1 min-w-0">
@@ -36,7 +43,7 @@ export function WorkCard({ work, onPlusOne, onUseTicket }: Props) {
             {work.title}
           </Link>
           {work.piccoma_url && (
-            <a href={work.piccoma_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">
+            <a href={work.piccoma_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline block">
               ピッコマで開く →
             </a>
           )}
@@ -58,19 +65,19 @@ export function WorkCard({ work, onPlusOne, onUseTicket }: Props) {
         </div>
       </div>
 
-      {/* Ticket status */}
+      {/* チケット状態バッジ */}
       {isReady && (
-        <div className="bg-green-100 text-green-700 text-sm font-bold px-3 py-1 rounded-full text-center">
-          ✅ 待てば0円 使える！
+        <div className="bg-green-100 text-green-700 text-sm font-bold px-3 py-2 rounded-xl text-center">
+          ✅ 待てば0円 今すぐ読めます！
         </div>
       )}
       {isCharging && (
-        <div className="bg-gray-100 text-gray-500 text-sm px-3 py-1 rounded-full text-center">
-          ⏳ チャージ中: 残り {countdown}
+        <div className="bg-gray-100 text-gray-500 text-sm px-3 py-2 rounded-xl text-center">
+          ⏳ チャージ中: 残り {countdownText}
         </div>
       )}
 
-      {/* Actions */}
+      {/* アクションボタン */}
       <div className="flex gap-2">
         <button
           onClick={() => onPlusOne(work.id)}

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginScreen } from "@/components/LoginScreen";
 import { WorkCard } from "@/components/WorkCard";
-import { getWorks, getProgress, getLatestTicket, getTicketStatus, getChargeRemainingMs, upsertProgress, useTicket } from "@/lib/firestore";
+import { getWorks, getProgress, getLatestTicket, getTicketStatus, getChargeCompleteAtMs, upsertProgress, useTicket } from "@/lib/firestore";
 import { useDevice } from "@/hooks/useDevice";
 import type { WorkWithProgress } from "@/types";
 import Link from "next/link";
@@ -24,15 +24,16 @@ export default function Dashboard() {
           const progress = await getProgress(user.uid, w.id);
           const latestTicket = await getLatestTicket(user.uid, w.id);
           const ticketStatus = getTicketStatus(latestTicket);
-          const chargeRemainingMs = getChargeRemainingMs(latestTicket);
-          return { ...w, progress, latestTicket, ticketStatus, chargeRemainingMs } as WorkWithProgress;
+          const chargeCompleteAtMs = getChargeCompleteAtMs(latestTicket);
+          return { ...w, progress, latestTicket, ticketStatus, chargeCompleteAtMs } as WorkWithProgress;
         })
       );
       enriched.sort((a, b) => {
         if (a.ticketStatus === "ready" && b.ticketStatus !== "ready") return -1;
         if (b.ticketStatus === "ready" && a.ticketStatus !== "ready") return 1;
         if (a.ticketStatus === "charging" && b.ticketStatus === "charging") {
-          return (a.chargeRemainingMs ?? 0) - (b.chargeRemainingMs ?? 0);
+          // チャージ完了が早い順（小さいタイムスタンプが先）
+          return (a.chargeCompleteAtMs ?? Infinity) - (b.chargeCompleteAtMs ?? Infinity);
         }
         return 0;
       });

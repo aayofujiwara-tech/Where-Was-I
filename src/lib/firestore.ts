@@ -118,10 +118,9 @@ export function getTicketStatus(ticket: Ticket | null): "ready" | "charging" | n
   return ticket.charge_complete_at.toMillis() <= Date.now() ? "ready" : "charging";
 }
 
-export function getChargeRemainingMs(ticket: Ticket | null): number | null {
+export function getChargeCompleteAtMs(ticket: Ticket | null): number | null {
   if (!ticket) return null;
-  const remaining = ticket.charge_complete_at.toMillis() - Date.now();
-  return remaining > 0 ? remaining : 0;
+  return ticket.charge_complete_at.toMillis();
 }
 
 // ── History ───────────────────────────────────────────────────────────

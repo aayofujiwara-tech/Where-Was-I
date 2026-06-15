@@ -101,7 +101,7 @@ export default function EditWorkPage() {
               ジャンルタグ
               <span className="text-xs text-gray-400 font-normal ml-2">入力してEnterで追加</span>
             </label>
-            <TagInput tags={tags} onChange={setTags} />
+            <TagInput tags={tags} onChange={setTags} userId={user.uid} />
           </div>
 
           <div>

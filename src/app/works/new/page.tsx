@@ -88,6 +88,7 @@ export default function NewWorkPage() {
               tags={tags}
               onChange={setTags}
               placeholder="例: ラブコメ"
+              userId={user.uid}
             />
           </div>
 

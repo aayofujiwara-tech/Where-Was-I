@@ -123,6 +123,23 @@ export function getChargeCompleteAtMs(ticket: Ticket | null): number | null {
   return ticket.charge_complete_at.toMillis();
 }
 
+// ── Custom Tags ───────────────────────────────────────────────────────
+export async function getCustomTags(userId: string): Promise<string[]> {
+  const snap = await getDocs(collection(db, "users", userId, "customTags"));
+  return snap.docs.map((d) => d.data().tag as string);
+}
+
+export async function saveCustomTag(userId: string, tag: string): Promise<void> {
+  const snap = await getDocs(
+    query(collection(db, "users", userId, "customTags"), where("tag", "==", tag))
+  );
+  if (!snap.empty) return;
+  await addDoc(collection(db, "users", userId, "customTags"), {
+    tag,
+    createdAt: serverTimestamp(),
+  });
+}
+
 // ── History ───────────────────────────────────────────────────────────
 export async function getProgressHistory(
   userId: string,

@@ -7,10 +7,11 @@ import { useCountdown } from "@/hooks/useCountdown";
 interface Props {
   work: WorkWithProgress;
   onPlusOne: (workId: string) => void;
+  onPlusSeven: (workId: string) => void;
   onUseTicket: (workId: string) => void;
 }
 
-export function WorkCard({ work, onPlusOne, onUseTicket }: Props) {
+export function WorkCard({ work, onPlusOne, onPlusSeven, onUseTicket }: Props) {
   const { text: countdownText, done: chargeDone } = useCountdown(work.chargeCompleteAtMs);
 
   // サーバー取得時点で ready、またはカウントダウンが完了したら読める
@@ -78,16 +79,24 @@ export function WorkCard({ work, onPlusOne, onUseTicket }: Props) {
       )}
 
       {/* アクションボタン */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => onPlusOne(work.id)}
-          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-xl text-sm transition-colors"
-        >
-          +1話 読んだ
-        </button>
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <button
+            onClick={() => onPlusOne(work.id)}
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-3 rounded-xl text-sm transition-colors"
+          >
+            +1話進める
+          </button>
+          <button
+            onClick={() => onPlusSeven(work.id)}
+            className="flex-1 bg-blue-400 hover:bg-blue-500 text-white font-bold py-3 px-3 rounded-xl text-sm transition-colors"
+          >
+            +7話進める
+          </button>
+        </div>
         <button
           onClick={() => onUseTicket(work.id)}
-          className="flex-1 bg-orange-400 hover:bg-orange-500 text-white font-bold py-2 px-3 rounded-xl text-sm transition-colors"
+          className="w-full bg-orange-400 hover:bg-orange-500 text-white font-bold py-3 rounded-xl text-sm transition-colors"
         >
           待てば0円 使った
         </button>

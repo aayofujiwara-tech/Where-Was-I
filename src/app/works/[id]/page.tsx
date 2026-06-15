@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginScreen } from "@/components/LoginScreen";
@@ -50,6 +50,18 @@ export default function WorkDetailPage() {
 
   useEffect(() => { if (user) fetchData(); }, [user, id]);
 
+  const handlePlusN = async (n: number) => {
+    if (!user) return;
+    const current = progress?.current_episode ?? (episodeInput ? parseInt(episodeInput, 10) : 0);
+    setSaving(true);
+    try {
+      await upsertProgress(user.uid, id, current + n, memo, device);
+      await fetchData();
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSaveProgress = async () => {
     if (!user || !episodeInput) return;
     setSaving(true);
@@ -80,9 +92,9 @@ export default function WorkDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
-        <Link href="/" className="text-gray-400 hover:text-gray-600">←</Link>
+        <Link href="/" className="text-gray-400 hover:text-gray-600 text-lg leading-none p-1 -ml-1">←</Link>
         <h1 className="text-base font-bold text-gray-900 flex-1 truncate">{work.title}</h1>
-        <Link href={`/works/${id}/edit`} className="text-sm text-blue-500 hover:underline">編集</Link>
+        <Link href={`/works/${id}/edit`} className="text-sm text-blue-500 hover:underline p-1">編集</Link>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
@@ -101,25 +113,53 @@ export default function WorkDetailPage() {
 
         <section className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
           <h2 className="font-bold text-gray-800">進捗</h2>
-          <div className="flex gap-3 items-end">
-            <div className="flex-1">
-              <label className="text-xs text-gray-500 mb-1 block">現在の既読話数</label>
-              <input
-                type="number"
-                value={episodeInput}
-                onChange={(e) => setEpisodeInput(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                min={0}
-              />
-            </div>
+
+          <div className="flex gap-2">
             <button
-              onClick={handleSaveProgress}
+              onClick={() => handlePlusN(1)}
               disabled={saving}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm transition-colors disabled:opacity-50"
+              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl text-sm transition-colors disabled:opacity-50"
             >
-              {saving ? "保存中..." : "保存"}
+              +1話進める
+            </button>
+            <button
+              onClick={() => handlePlusN(7)}
+              disabled={saving}
+              className="flex-1 bg-blue-400 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-sm transition-colors disabled:opacity-50"
+            >
+              +7話進める
             </button>
           </div>
+
+          {progress && (
+            <p className="text-sm text-gray-600 text-center">
+              現在 <span className="font-bold text-gray-900">{progress.current_episode}話</span> まで読了
+            </p>
+          )}
+
+          <div className="border-t border-gray-100 pt-3 space-y-2">
+            <p className="text-xs text-gray-400">手動で話数を修正</p>
+            <div className="flex gap-3 items-end">
+              <div className="flex-1">
+                <label className="text-xs text-gray-500 mb-1 block">既読話数</label>
+                <input
+                  type="number"
+                  value={episodeInput}
+                  onChange={(e) => setEpisodeInput(e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  min={0}
+                />
+              </div>
+              <button
+                onClick={handleSaveProgress}
+                disabled={saving}
+                className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50"
+              >
+                {saving ? "保存中..." : "保存"}
+              </button>
+            </div>
+          </div>
+
           <div>
             <label className="text-xs text-gray-500 mb-1 block">メモ</label>
             <textarea
@@ -139,12 +179,12 @@ export default function WorkDetailPage() {
 
         <section className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
           <h2 className="font-bold text-gray-800">待てば0円</h2>
-          {serverTicketStatus === "ready" && (
+          {isReady && (
             <div className="bg-green-100 text-green-700 font-bold text-sm px-4 py-2 rounded-xl text-center">
               ✅ チャージ完了！今すぐ読めます
             </div>
           )}
-          {serverTicketStatus === "charging" && (
+          {isCharging && (
             <div className="bg-gray-100 text-gray-600 text-sm px-4 py-2 rounded-xl text-center">
               ⏳ チャージ中: 残り {countdownText}
             </div>
@@ -154,7 +194,7 @@ export default function WorkDetailPage() {
           )}
           <button
             onClick={handleUseTicket}
-            className="w-full bg-orange-400 hover:bg-orange-500 text-white font-bold py-2 rounded-xl text-sm transition-colors"
+            className="w-full bg-orange-400 hover:bg-orange-500 text-white font-bold py-3 rounded-xl text-sm transition-colors"
           >
             待てば0円を使った
           </button>
@@ -179,7 +219,7 @@ export default function WorkDetailPage() {
         <div className="pt-4">
           <button
             onClick={handleArchive}
-            className="w-full border border-gray-300 text-gray-500 hover:bg-gray-100 py-2 rounded-xl text-sm transition-colors"
+            className="w-full border border-gray-300 text-gray-500 hover:bg-gray-100 py-3 rounded-xl text-sm transition-colors"
           >
             この作品をアーカイブ（完読・追跡終了）
           </button>

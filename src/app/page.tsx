@@ -55,6 +55,14 @@ export default function Dashboard() {
     await fetchAll();
   };
 
+  const handlePlusSeven = async (workId: string) => {
+    if (!user) return;
+    const w = works.find((x) => x.id === workId);
+    const current = w?.progress?.current_episode ?? 0;
+    await upsertProgress(user.uid, workId, current + 7, w?.progress?.memo ?? "", device);
+    await fetchAll();
+  };
+
   const handleUseTicket = async (workId: string) => {
     if (!user) return;
     await useTicket(user.uid, workId);
@@ -94,9 +102,9 @@ export default function Dashboard() {
               {readyWorks.length === 0 ? (
                 <p className="text-sm text-gray-400">チャージ完了の作品はありません</p>
               ) : (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {readyWorks.map((w) => (
-                    <WorkCard key={w.id} work={w} onPlusOne={handlePlusOne} onUseTicket={handleUseTicket} />
+                    <WorkCard key={w.id} work={w} onPlusOne={handlePlusOne} onPlusSeven={handlePlusSeven} onUseTicket={handleUseTicket} />
                   ))}
                 </div>
               )}
@@ -106,9 +114,9 @@ export default function Dashboard() {
             {chargingWorks.length > 0 && (
               <section>
                 <h2 className="text-base font-bold text-gray-600 mb-3">⏳ チャージ中 ({chargingWorks.length})</h2>
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {chargingWorks.map((w) => (
-                    <WorkCard key={w.id} work={w} onPlusOne={handlePlusOne} onUseTicket={handleUseTicket} />
+                    <WorkCard key={w.id} work={w} onPlusOne={handlePlusOne} onPlusSeven={handlePlusSeven} onUseTicket={handleUseTicket} />
                   ))}
                 </div>
               </section>
@@ -118,9 +126,9 @@ export default function Dashboard() {
             {otherWorks.length > 0 && (
               <section>
                 <h2 className="text-base font-bold text-gray-500 mb-3">📚 その他の作品 ({otherWorks.length})</h2>
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {otherWorks.map((w) => (
-                    <WorkCard key={w.id} work={w} onPlusOne={handlePlusOne} onUseTicket={handleUseTicket} />
+                    <WorkCard key={w.id} work={w} onPlusOne={handlePlusOne} onPlusSeven={handlePlusSeven} onUseTicket={handleUseTicket} />
                   ))}
                 </div>
               </section>
